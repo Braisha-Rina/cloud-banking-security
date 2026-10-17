@@ -33,5 +33,5 @@ class User(BaseModel):
     username: str
     password_hash: str
 class UserRegistration(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=3, max_length=30, strip_whitespace=True)
+    password: str = Field(min_length=8, max_length=128)
