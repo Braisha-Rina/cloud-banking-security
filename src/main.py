@@ -1,7 +1,8 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field, EmailStr
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from uuid import uuid4
 class Account(BaseModel):
     account_id: str
     currency: str
@@ -30,8 +31,27 @@ def verify_password(password: str, hashed_password: str) :#bool
         return False
 class User(BaseModel):
     user_id: str
-    username: str
+    email: str
     password_hash: str
 class UserRegistration(BaseModel):
-    username: str = Field(min_length=3, max_length=30, strip_whitespace=True)
+    email:EmailStr
     password: str = Field(min_length=8, max_length=128)
+@app.post("/register")
+def register_user(user: UserRegistration):
+    for existing_user in users:
+        if existing_user["email"] == user.email:
+            raise HTTPException(
+                status_code=409,
+                detail="Email already registered"
+    )
+    new_user = User(
+        user_id=str(uuid4()),
+        email=user.email,
+        password_hash=hash_password(user.password)
+    )
+    users.append(new_user.model_dump())
+    return {
+        "user_id": new_user.user_id,
+        "email": new_user.email,
+        "message": "User registered successfully"
+    }
