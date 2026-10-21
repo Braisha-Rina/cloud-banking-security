@@ -33,25 +33,29 @@ class User(BaseModel):
     user_id: str
     email: str
     password_hash: str
-class UserRegistration(BaseModel):
-    email:EmailStr
+class UserLogin(BaseModel):
+    email: EmailStr
     password: str = Field(min_length=8, max_length=128)
-@app.post("/register")
-def register_user(user: UserRegistration):
+@app.post("/login")
+def login_user(user: UserLogin):
     for existing_user in users:
         if existing_user["email"] == user.email:
+            if verify_password(
+                user.password,
+                existing_user["password_hash"]
+            ):
+                return {
+                    "message": "Login successful",
+                    "user_id": existing_user["user_id"],
+                    "email": existing_user["email"]
+                }
+
             raise HTTPException(
-                status_code=409,
-                detail="Email already registered"
+                status_code=401,
+                detail="Invalid email or password"
+            )
+
+    raise HTTPException(
+        status_code=401,
+        detail="Invalid email or password"
     )
-    new_user = User(
-        user_id=str(uuid4()),
-        email=user.email,
-        password_hash=hash_password(user.password)
-    )
-    users.append(new_user.model_dump())
-    return {
-        "user_id": new_user.user_id,
-        "email": new_user.email,
-        "message": "User registered successfully"
-    }
